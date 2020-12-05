@@ -31,8 +31,6 @@ const userSchema = mongoose.Schema({
 
 userSchema.pre('save', async function(next) {
     try {
-        if(this.accessType !== 'email') next();
-        
         const sail = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(this.password, sail);
         this.password = passwordHash;
