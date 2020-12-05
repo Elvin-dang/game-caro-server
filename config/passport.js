@@ -33,11 +33,3 @@ passport.use('local', new LocalStrategy({
         return done(err, false);
     }
 }));
-
-passport.use('google', new GooglePlusStrategy({
-    clientID: '701190530166-7spakpo89fpbqqmcsph8ur2393imdkna.apps.googleusercontent.com',
-    clientSecret: 'Cu3tTSrJ3txDrb6WaU_qulYX'
-}, async (token, profile, done) => {
-    console.log(token);
-    console.log(profile);
-}));

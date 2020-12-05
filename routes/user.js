@@ -3,7 +3,7 @@ const router = express.Router();
 const passport = require('passport');
 const passportConf = require('../config/passport');
 
-const { validateBody, schemas } = require('../validates/authValidation');
+const { validateBody, schemas } = require('../validations/authValidation');
 const UserController = require('../controllers/user');
 
 router.post('/signup', validateBody(schemas.signupSchema), UserController.signUp);
