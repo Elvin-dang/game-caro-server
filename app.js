@@ -17,8 +17,12 @@ app.use(cors());
 // Socket IO
 const server = http.createServer(app);
 const io = require('socket.io')(server,{
-    cors:true,
-    origin:process.env.REACT_APP_client_domain
+    cors:{
+        origin:process.env.REACT_APP_client_domain,
+        method: ["GET","POST"],
+        allowHeaders: ["*"],
+        credentials: true
+}
 });
 
 let userOnline = []; //danh sách user dang online
