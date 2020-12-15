@@ -39,106 +39,105 @@ let playRooms = []; //danh sách bàn
 
 io.on('connection', function(socket) {
     //lắng nghe khi người dùng thoát
+    console.log('new user', socket.id);
     socket.on('disconnect', function() {
-        var disconnectedUserID;
-        for (var a=0; a < userOnline.length; a++) {
-            if (userOnline[a][0] === socket.id) {
+        let disconnectedUserID;
+        for (let a=0; a < userOnline.length; a++) {
+            if (userOnline[a].socketId === socket.id) {
                 disconnectedUserID = a;
                 userOnline.splice(disconnectedUserID, 1);
             }
         }
+        console.log('user disconnect', socket.id);
         io.sockets.emit('updateUsersOnlineList', userOnline);
     })
     //lắng nghe khi có người login
-    socket.on('login', data=> {
-        userlogin = [socket.id,data[0],data[1]];
-        if(userlogin[1] !== '' && userlogin[2] !== '' )
+    socket.on('login', userData => {
+        const userLogin = {
+            socketId: socket.id,
+            userId: userData.id,
+            userName: userData.name,
+        };
+
+        if(userLogin.userId !== '' && userLogin.userName !== '' )
         {
-            if(userOnline.length==0){
-                userOnline.push(userlogin);
-                // console.log(userOnline);
-                io.sockets.emit('updateUsersOnlineList', userOnline);// gửi danh sách user dang online
-            }
-            else{
-                //kiểm tra trùng user
-                var flag=0;
-                for (var a=0; a < userOnline.length; a++) {
-                    if (userOnline[a][1] == userlogin[1]) {
-                        flag =1;
+            if(userOnline.length === 0) {
+                userOnline.push(userLogin);
+                io.sockets.emit('updateUsersOnlineList', userOnline);
+            } else {
+                let checkExist = false;
+                for(let i=0;i<userOnline.length;i++) {
+                    if(userOnline[i].userId === userLogin.userId) {
+                        checkExist = true;
+                        break;
                     }
                 }
-                if(flag===0)
-                { 
-                    userOnline.push(userlogin);
-                    // console.log(userOnline);
-                    io.sockets.emit('updateUsersOnlineList', userOnline);// gửi danh sách user dang online
+
+                if(!checkExist) {
+                    userOnline.push(userLogin);
+                    io.sockets.emit('updateUsersOnlineList', userOnline);
                 }
             }
         }
-        io.sockets.emit('updateRoomsList', playRooms);// gửi danh sách room dang tồn tại
     });
 
-    socket.on('createRoom', dataRoom => {
+    socket.on('createRoom', hostName => {
         console.log('create new room');
-        newRoomID = playRooms.length +1;
-        // new room :
-        // #0 id; 
-        // #1 tên người tạo;
-        // #2 trạng thái: 0 = chờ , 1 = đang chơi;
-        // #3 id player 1; 
-        // #4 name player 1; 
-        // #5 id player 2;
-        // #6 name player 2
-        newRoom = [newRoomID, dataRoom,0,null,null,null,null];
+        const newRoom = {
+            roomId: playRooms.length + 1,
+            hostName: hostName,
+            status: 0,
+            player1: {
+                id: null,
+                name: null
+            },
+            player2: {
+                id: null,
+                name: null
+            }
+        }
         playRooms.push(newRoom);
         io.sockets.emit('updateRoomsList', playRooms);
-        console.log(playRooms);
     });
 
-    socket.on('joinRoom', data => { //data là room id
-        console.log('new user join room ', data);
+    socket.on('joinRoom', roomId => {
+        console.log(`${socket.id} join room`, roomId);
         for (var a=0; a < playRooms.length; a++) {
-            if (playRooms[a][0] == data) {
-                socket.join(data); //join room theo room id
-                io.sockets.to(data).emit('roomJoined',playRooms[a]);//gui thong tin room vừa join                
+            if (playRooms[a].roomId == roomId) {
+                socket.join(roomId); //join room theo room id
+                io.sockets.to(roomId).emit('roomJoined', playRooms[a]);//gui thong tin room vừa join                
+                break;
             }
         }
         io.sockets.emit('updateRoomsList', playRooms);
-        console.log(playRooms);
     });
 
-    socket.on('updateRoom', data => { //data là room id
+    socket.on('updateRoom', room => {
+        console.log('update room', room);
         for (var a=0; a < playRooms.length; a++) {
-            if (playRooms[a][0] == data[0]) {
-                playRooms[a][3] = data[1];
-                playRooms[a][4] = data[2];
-                playRooms[a][5] = data[3];
-                playRooms[a][6] = data[4];
-                console.log("update:" + playRooms[a]);
-                io.sockets.emit('roomUpdated',playRooms[a]);//gui thong tin room vừa join
+            if (playRooms[a].roomId == room.roomId) {
+                playRooms.splice(a, 0, room);
+                io.sockets.to(room.roomId).emit('roomUpdated', room);//gui thong tin room vừa join
+                break;
             }
         }
         io.sockets.emit('updateRoomsList', playRooms);
-        console.log(playRooms);
     });
 
-    socket.on('leaveRoom', data => { //data là id player
+    socket.on('leaveRoom', userId => { //data là id player
         for (var a=0; a < playRooms.length; a++) {
-            if (playRooms[a][3] === data) {
-                playRooms[a][3] = null;
-                playRooms[a][4] = null;
-                console.log("update:" + playRooms[a]);
-                io.sockets.emit('roomUpdated',playRooms[a]);//gui thong tin room vừa join
+            if (playRooms[a].player1.id === userId) {
+                playRooms[a].player1.id = null;
+                playRooms[a].player1.name = null;
+                io.sockets.to(playRooms[a].roomId).emit('roomUpdated', playRooms[a]);//gui thong tin room vừa join
             }
-            if (playRooms[a][5] === data) {
-                playRooms[a][5] = null;
-                playRooms[a][6] = null;
-                console.log("update:" + playRooms[a]);
-                io.sockets.emit('roomUpdated',playRooms[a]);//gui thong tin room vừa join
+            if (playRooms[a].player2.id === data) {
+                playRooms[a].player2.id = null;
+                playRooms[a].player2.name = null;
+                io.sockets.to(playRooms[a].roomId).emit('roomUpdated', playRooms[a]);
             }
         }
         io.sockets.emit('updateRoomsList', playRooms);
-        console.log(playRooms);
     });
 
 });
