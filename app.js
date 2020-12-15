@@ -8,6 +8,7 @@ require('dotenv/config');
 var _findIndex = require('lodash/findIndex')
 const socketIo = require('socket.io');
 const { forInRight } = require('lodash');
+const { moveCursor } = require('readline');
 
 const app = express();
 
@@ -64,6 +65,7 @@ io.on('connection', function(socket) {
             if(userOnline.length === 0) {
                 userOnline.push(userLogin);
                 io.sockets.emit('updateUsersOnlineList', userOnline);
+                io.sockets.emit('updateRoomsList', playRooms);
             } else {
                 let checkExist = false;
                 for(let i=0;i<userOnline.length;i++) {
@@ -76,6 +78,7 @@ io.on('connection', function(socket) {
                 if(!checkExist) {
                     userOnline.push(userLogin);
                     io.sockets.emit('updateUsersOnlineList', userOnline);
+                    io.sockets.emit('updateRoomsList', playRooms);
                 }
             }
         }
@@ -87,6 +90,7 @@ io.on('connection', function(socket) {
             roomId: playRooms.length + 1,
             hostName: hostName,
             status: 0,
+            nextTurn: 1,
             player1: {
                 id: null,
                 name: null
@@ -116,6 +120,7 @@ io.on('connection', function(socket) {
         console.log('update room', room);
         for (var a=0; a < playRooms.length; a++) {
             if (playRooms[a].roomId == room.roomId) {
+                playRooms.splice(a, 1);
                 playRooms.splice(a, 0, room);
                 io.sockets.to(room.roomId).emit('roomUpdated', room);//gui thong tin room vừa join
                 break;
@@ -140,6 +145,57 @@ io.on('connection', function(socket) {
         io.sockets.emit('updateRoomsList', playRooms);
     });
 
+    socket.on('nextMove', move => {
+        console.log("From next move", move.i, move.j);
+        for (var a=0; a < playRooms.length; a++) {
+            if (playRooms[a].roomId == move.room.roomId) {
+                let nextTurn = 1;
+                if(move.room.nextTurn === 1) nextTurn = 2;
+
+                playRooms.splice(a, 1);
+                playRooms.splice(a, 0, {
+                    ...move.room,
+                    nextTurn: nextTurn
+                });
+                io.sockets.to(move.room.roomId).emit('roomUpdated', playRooms[a]);//gui thong tin room vừa join
+                break;
+            }
+        }
+        io.sockets.to(move.room.roomId).emit('updateGameConfig', move.gameConfig);
+        socket.broadcast.to(move.room.roomId).emit('opponentMove', {
+            i: move.i,
+            j: move.j,
+        });
+        io.sockets.emit('updateRoomsList', playRooms);
+    });
+
+    socket.on('restartGame', room => {
+        for (var a=0; a < playRooms.length; a++) {
+            if (playRooms[a].roomId == room.roomId) {
+                playRooms.splice(a, 1);
+                playRooms.splice(a, 0, room);
+                io.sockets.to(room.roomId).emit('roomUpdated', room);//gui thong tin room vừa join
+                break;
+            }
+        }
+
+        let tmpArr = Array(20);
+        for (let i = 0; i < 20; i++) {
+            tmpArr[i] = Array(20).fill(null);
+        }
+        io.sockets.to(room.roomId).emit('updateGameConfig', {
+            width: 20,
+            height: 20,
+            history: [{
+                squares: tmpArr,
+                location: null
+            }],
+            stepNumber: 0,
+            xIsNext: true,
+            isDescending: true
+        });
+        io.sockets.emit('updateRoomsList', playRooms);
+    });
 });
 
 // Connect mongoDB
