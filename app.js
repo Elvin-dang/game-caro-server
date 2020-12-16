@@ -136,7 +136,7 @@ io.on('connection', function(socket) {
                 playRooms[a].player1.name = null;
                 io.sockets.to(playRooms[a].roomId).emit('roomUpdated', playRooms[a]);//gui thong tin room vừa join
             }
-            if (playRooms[a].player2.id === data) {
+            if (playRooms[a].player2.id === userId) {
                 playRooms[a].player2.id = null;
                 playRooms[a].player2.name = null;
                 io.sockets.to(playRooms[a].roomId).emit('roomUpdated', playRooms[a]);
@@ -196,6 +196,22 @@ io.on('connection', function(socket) {
         });
         io.sockets.emit('updateRoomsList', playRooms);
     });
+    //lắng nghe khi có người gửi tin nhắn tất cả mọi ng
+    socket.on('newMessage', data => {
+        //gửi lại tin nhắn cho tất cả các user dang online
+        io.sockets.emit('newMessage', {
+            name: data.name,
+            message: data.message
+        });
+    })
+    //lắng nghe khi có người gửi tin nhắn trong 1 room
+    socket.on('chat-room', data => {
+        //gửi lại tin nhắn cho tất cả các user trong room
+        io.sockets.in(data.roomId).emit("server-chat-room", {
+            name: data.name,
+            message: data.message
+        });
+    })
 });
 
 // Connect mongoDB
