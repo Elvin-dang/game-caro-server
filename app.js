@@ -222,6 +222,7 @@ mongoose.connect(process.env.DB_CONNECTION,
 // Routes   
 app.use('/api/user', require('./routes/user'));
 app.use('/api/oauth', require('./routes/oauth'));
+app.use('/api/game', require('./routes/game'));
 
 const port = process.env.PORT || 3000;
 server.listen(port, () => console.log(`Server run on port ${port}`));

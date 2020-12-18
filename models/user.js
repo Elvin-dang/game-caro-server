@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs'); 
+const bcrypt = require('bcryptjs');
 
 const userSchema = mongoose.Schema({
     name: {
@@ -26,6 +26,31 @@ const userSchema = mongoose.Schema({
     accessType: {
         type: String,
         required: true
+    },
+    active: {
+        type: String,
+        default: '1'
+    },
+    rank: {
+        type: String,
+        default: "Tập sự"
+    },
+    elo: {
+        type: Number,
+        default: 1000
+    },
+    game: {
+        type: Object,
+        default: {
+            win: 0,
+            lose: 0,
+            draw: 0,
+            total: 0
+        }
+    },
+    history: {
+        type: Array,
+        default: []
     }
 });
 
