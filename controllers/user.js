@@ -49,18 +49,18 @@ module.exports = {
                 from: 'gamecaro@gmail.com',
                 to: email,
                 subject: 'Kích hoạt tài khoản',
-                // html: `
-                //     <h2>Xin chào ${name},</h2>
-                //     <p></p>
-                //     <h2>Nhấn vào link bên dưới xác nhận tài khoản của bạn:</h2>
-                //     <p>${process.env.CLIENT_DOMAIN}/account/activate/${token}</p>
-                // `
                 html: `
                     <h2>Xin chào ${name},</h2>
                     <p></p>
                     <h2>Nhấn vào link bên dưới xác nhận tài khoản của bạn:</h2>
-                    <p>${process.env.CLIENT_TEST_DOMAIN}/account/activate/${token}</p>
+                    <p>${process.env.CLIENT_DOMAIN}/account/activate/${token}</p>
                 `
+                // html: `
+                //     <h2>Xin chào ${name},</h2>
+                //     <p></p>
+                //     <h2>Nhấn vào link bên dưới xác nhận tài khoản của bạn:</h2>
+                //     <p>${process.env.CLIENT_TEST_DOMAIN}/account/activate/${token}</p>
+                // `
             };
 
             mg.messages().send(data, function (error, body) {
