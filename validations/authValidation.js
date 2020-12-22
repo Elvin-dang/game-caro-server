@@ -14,12 +14,12 @@ module.exports = {
     schemas: {
         signinSchema: Joi.object().keys({
             email: Joi.string().email().required(),
-            password: Joi.string().min(3).required(),
+            password: Joi.string().required(),
         }),
         signupSchema: Joi.object().keys({
             name: Joi.string().min(1).required(),
             email: Joi.string().email().required(),
-            password: Joi.string().required(),
+            password: Joi.string().min(3).required(),
         }),
         forgetPasswordSchema: Joi.object().keys({
             email: Joi.string().email().required(),

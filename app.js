@@ -21,18 +21,12 @@ const server = http.createServer(app);
 // cors cho host
 const io = require('socket.io')(server,{
     cors:{
-        origin:process.REACT_APP_client_domain,
+        origin: [process.env.CLIENT_DOMAIN, process.env.CLIENT_TEST_DOMAIN],
         method: ["GET","POST"],
         allowHeaders: ["*"],
         credentials: true
     }
 });
-
-//cors cho local
-// const io = require('socket.io')(server,{
-//     cors:true,
-//     origin:process.REACT_APP_client_domain_testing
-// });
 
 let userOnline = []; //danh sách user dang online: userOnline[x][y] => x là thứ tự người onl, y = 0 là socket id, y = 1 là id user, y = 2 là tên user
 let playRooms = []; //danh sách bàn 
