@@ -10,4 +10,8 @@ router.post('/signup', validateBody(schemas.signupSchema), UserController.signUp
 router.post('/signin', validateBody(schemas.signinSchema), passport.authenticate('local', { session: false }), UserController.signIn);
 router.get('/', passport.authenticate('jwt', { session: false }), UserController.getUser);
 
+router.post('/active', passport.authenticate('jwt-active-account', { session: false }), UserController.activeAccount);
+router.post('/forgetPassword', validateBody(schemas.forgetPasswordSchema), UserController.forgetPassword);
+router.post('/confirmToken', passport.authenticate('jwt-forget-password', { session: false }), UserController.confirmToken);
+router.post('/resetPassword', validateBody(schemas.resetPasswordSchema), passport.authenticate('jwt-forget-password', { session: false }), UserController.resetPassword);
 module.exports = router;

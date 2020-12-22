@@ -36,7 +36,8 @@ module.exports = {
                     name: name,
                     email: email,
                     password: email + process.env.PASSWORD_SECRET,
-                    accessType: 'google'
+                    accessType: 'google',
+                    active: '2' // Đã kích hoạt
                 });
     
                 await newUser.save();
@@ -64,7 +65,8 @@ module.exports = {
                     name: name,
                     email: email,
                     password: email + process.env.PASSWORD_SECRET,
-                    accessType: 'facebook'
+                    accessType: 'facebook',
+                    active: '2' // Đã kích hoạt
                 });
     
                 await newUser.save();
