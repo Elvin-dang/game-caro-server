@@ -147,4 +147,15 @@ module.exports = {
             console.log(err);
         }
     },
+    profile: async (req, res) => {
+        const user = req.body;
+        try{
+            const existUser = await User.findOneAndUpdate(
+               { "email" : req.body.email }, req.body);
+            res.status(200).json({ msg:"Update successfully!" });
+        }
+        catch(e){
+            res.status(400).json({ msg:"Failed in update user: " + e });
+        }
+    }
 }

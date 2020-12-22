@@ -14,4 +14,6 @@ router.post('/active', passport.authenticate('jwt-active-account', { session: fa
 router.post('/forgetPassword', validateBody(schemas.forgetPasswordSchema), UserController.forgetPassword);
 router.post('/confirmToken', passport.authenticate('jwt-forget-password', { session: false }), UserController.confirmToken);
 router.post('/resetPassword', validateBody(schemas.resetPasswordSchema), passport.authenticate('jwt-forget-password', { session: false }), UserController.resetPassword);
+router.patch('/profile', passport.authenticate('jwt', { session: false }), UserController.profile);
+
 module.exports = router;
