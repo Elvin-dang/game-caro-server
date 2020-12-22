@@ -19,20 +19,20 @@ app.use(cors());
 const server = http.createServer(app);
 
 //cors cho host
-const io = require('socket.io')(server,{
-    cors:{
-        origin:process.REACT_APP_client_domain,
-        method: ["GET","POST"],
-        allowHeaders: ["*"],
-        credentials: true
-}
-});
+// const io = require('socket.io')(server,{
+//     cors:{
+//         origin:process.REACT_APP_client_domain,
+//         method: ["GET","POST"],
+//         allowHeaders: ["*"],
+//         credentials: true
+// }
+// });
 
 //cors cho local
-// const io = require('socket.io')(server,{
-//     cors:true,
-//     origin:process.REACT_APP_client_domain
-// });
+const io = require('socket.io')(server,{
+    cors:true,
+    origin:process.REACT_APP_client_domain_testing
+});
 
 let userOnline = []; //danh sách user dang online: userOnline[x][y] => x là thứ tự người onl, y = 0 là socket id, y = 1 là id user, y = 2 là tên user
 let playRooms = []; //danh sách bàn 
@@ -40,7 +40,7 @@ let playRooms = []; //danh sách bàn
 
 io.on('connection', function(socket) {
     //lắng nghe khi người dùng thoát
-    console.log('new user', socket.id);
+    // console.log('new user', socket.id);
     socket.on('disconnect', function() {
         let disconnectedUserID;
         for (let a=0; a < userOnline.length; a++) {
@@ -84,11 +84,11 @@ io.on('connection', function(socket) {
         }
     });
 
-    socket.on('createRoom', hostName => {
+    socket.on('createRoom', data => { //data: hostName,newRoomType,newRoomPassword
         console.log('create new room');
         const newRoom = {
             roomId: playRooms.length + 1,
-            hostName: hostName,
+            hostName: data.hostName,
             status: 0,
             nextTurn: 1,
             player1: {
@@ -98,7 +98,10 @@ io.on('connection', function(socket) {
             player2: {
                 id: null,
                 name: null
-            }
+            },
+            type:data.newRoomType,
+            password:data.newRoomPassword,
+            subPlayers:[]
         }
         playRooms.push(newRoom);
         io.sockets.emit('updateRoomsList', playRooms);
