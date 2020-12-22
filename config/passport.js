@@ -23,13 +23,40 @@ passport.use('local', new LocalStrategy({
 }, async (email, password, done) => {
     try {
         const user = await User.findOne({ email });
-        if(!user) return done(null, false);
-
+        if(!user) return done(null, true, { message: "User not found"});
+        if(user.active !== '2') return done(null, true, { message: "Account has not been active !! Check your email"});
+        
         const checkPassword = await user.isValidPassword(password);
-        if(!checkPassword) return done(null, false);
+        if(!checkPassword) return done(null, true, { message: "Wrong password"});
 
         done(null, user);
     } catch(err) {
         return done(err, false);
+    }
+}));
+
+passport.use('jwt-active-account', new JwtStrategy({
+    jwtFromRequest: ExtractJwt.fromBodyField('token'),
+    secretOrKey: process.env.TOKEN_SECRET_1
+}, async (payload, done) => {
+    try {
+        const user = await User.findById(payload.id);
+        if(!user) return done(null, false);
+        done(null, user);
+    } catch(err) {
+        done(err, false);
+    }
+}));
+
+passport.use('jwt-forget-password', new JwtStrategy({
+    jwtFromRequest: ExtractJwt.fromBodyField('token'),
+    secretOrKey: process.env.TOKEN_SECRET_2
+}, async (payload, done) => {
+    try {
+        const user = await User.findById(payload.id);
+        if(!user) return done(null, false);
+        done(null, user);
+    } catch(err) {
+        done(err, false);
     }
 }));
