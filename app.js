@@ -37,12 +37,12 @@ io.on('connection', function(socket) {
     // console.log('new user', socket.id);
     socket.on('disconnect', function() {
         let disconnectedUserID;
-        for (let a=0; a < userOnline.length; a++) {
-            if (userOnline[a].socketId === socket.id) {
-                disconnectedUserID = a;
-                userOnline.splice(disconnectedUserID, 1);
+            for (let a=0; a < userOnline.length; a++) {
+                if (userOnline[a].socketId === socket.id) {
+                    disconnectedUserID = a;
+                    userOnline.splice(disconnectedUserID, 1);
+                }
             }
-        }
         console.log('user disconnect', socket.id);
         io.sockets.emit('updateUsersOnlineList', userOnline);
     })
@@ -78,7 +78,7 @@ io.on('connection', function(socket) {
         }
     });
 
-    socket.on('createRoom', data => { //data: hostName,newRoomType,newRoomPassword
+    socket.on('createRoom', data => { //data: hostName,newRoomType,newRoomPassword,newRoomTimePerRound
         console.log('create new room');
         const newRoom = {
             roomId: playRooms.length + 1,
@@ -95,7 +95,7 @@ io.on('connection', function(socket) {
             },
             type:data.newRoomType,
             password:data.newRoomPassword,
-            subPlayers:[]
+            timePerRound:data.newRoomTimePerRound
         }
         playRooms.push(newRoom);
         io.sockets.emit('updateRoomsList', playRooms);
@@ -164,6 +164,10 @@ io.on('connection', function(socket) {
             j: move.j,
         });
         io.sockets.emit('updateRoomsList', playRooms);
+    });
+
+    socket.on('invitePlayer', data => { //data: playerInviteName: tên người mời, room: id room mời, invitePlayerId :id người được mời
+        io.sockets.emit('inviteToPlay', data);
     });
 
     socket.on('restartGame', room => {
