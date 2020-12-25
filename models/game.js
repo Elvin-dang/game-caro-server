@@ -7,12 +7,16 @@ const gameSchema = mongoose.Schema({
         default: Date.now
     },
     player1: {
-        type: String,
+        type: Object,
         required: true
     },
     player2: {
-        type: String,
+        type: Object,
         required: true
+    },
+    winner: {
+        type: Number,
+        required: true,
     },
     move: {
         type: Array,
