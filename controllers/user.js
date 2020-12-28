@@ -154,5 +154,23 @@ module.exports = {
         catch(e){
             res.status(400).json({ msg:"Failed in update user: " + e });
         }
-    }
+    },
+    getAnotherUserByEmail: async (req, res) => {
+        try{
+            const existUser = await User.findOne({ "email": req.body.email });
+            res.status(200).json(existUser);
+        }
+        catch(e){
+            res.status(400).json({ msg:"Failed in get user: " + e });
+        }
+    },
+    getUserById: async (req, res) => {
+        try{
+            const existUser = await User.findById(req.params.id);
+            res.status(200).json(existUser);
+        }
+        catch(e){
+            res.status(400).json({ msg:"Failed in get user: " + e });
+        }
+    },
 }
