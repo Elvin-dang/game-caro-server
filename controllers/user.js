@@ -173,4 +173,20 @@ module.exports = {
             res.status(400).json({ msg:"Failed in get user: " + e });
         }
     },
+    getTopPlayers: async (req, res) => {
+        try{
+            const existUser = await User.find({}, ['_id','name','avatar'], // Columns to Return
+            {
+                skip:0, // Starting Row
+                limit:10, // Ending Row
+                sort:{
+                    elo: -1 //Sort by elo
+                }
+            });
+            res.status(200).json(existUser);
+        }
+        catch(e){
+            res.status(400).json({ msg:"Failed in get user: " + e });
+        }
+    },
 }
