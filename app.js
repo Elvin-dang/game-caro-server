@@ -33,19 +33,19 @@ const io = require('socket.io')(server,{
 
 let userOnline = []; //danh sách user dang online: userOnline[x][y] => x là thứ tự người onl, y = 0 là socket id, y = 1 là id user, y = 2 là tên user
 let playRooms = []; //danh sách bàn 
-
+let quickGamePlayers = [] //danh sách người chơi đang chơi nhanh
 
 io.on('connection', function(socket) {
     //lắng nghe khi người dùng thoát
     // console.log('new user', socket.id);
     socket.on('disconnect', function() {
         let disconnectedUserID;
-        for (let a=0; a < userOnline.length; a++) {
-            if (userOnline[a].socketId === socket.id) {
-                disconnectedUserID = a;
-                userOnline.splice(disconnectedUserID, 1);
+            for (let a=0; a < userOnline.length; a++) {
+                if (userOnline[a].socketId === socket.id) {
+                    disconnectedUserID = a;
+                    userOnline.splice(disconnectedUserID, 1);
+                }
             }
-        }
         console.log('user disconnect', socket.id);
         io.sockets.emit('updateUsersOnlineList', userOnline);
     })
@@ -81,7 +81,7 @@ io.on('connection', function(socket) {
         }
     });
 
-    socket.on('createRoom', data => { //data: hostName,newRoomType,newRoomPassword
+    socket.on('createRoom', data => { //data: hostName,newRoomType,newRoomPassword,newRoomTimePerRound
         console.log('create new room');
         const newRoom = {
             roomId: playRooms.length + 1,
@@ -98,7 +98,7 @@ io.on('connection', function(socket) {
             },
             type:data.newRoomType,
             password: data.newRoomPassword,
-            subPlayers: [],
+            timePerRound:data.newRoomTimePerRound,
             curGame: {
                 date: null,
                 player1: {
@@ -159,6 +159,75 @@ io.on('connection', function(socket) {
         }
         io.sockets.emit('updateRoomsList', playRooms);
     });
+
+    socket.on('invitePlayer', data => { //data: playerInviteName: tên người mời, room: id room mời, invitePlayerId :id người được mời
+        io.sockets.emit('inviteToPlay', data);
+    });
+
+    socket.on('joinQuickGame', data => { //data: id: id người chơi muốn chơi nhanh
+        let checkJoined = false;
+        for (var a=0; a < quickGamePlayers.length; a++) {
+            if(quickGamePlayers[a] === data.id)
+            { 
+                checkJoined = true;
+            }
+        }
+        if(checkJoined === false)
+        {
+            quickGamePlayers.push(data.id);
+            socket.join("QuickGame");
+            if(quickGamePlayers.length >= 2)
+            {
+                const newRoom = {
+                    roomId: playRooms.length + 1,
+                    hostName: "Phòng chơi nhanh",
+                    status: 0,
+                    nextTurn: 1,
+                    player1: {
+                        id: null,
+                        name: null
+                    },
+                    player2: {
+                        id: null,
+                        name: null
+                    },
+                    type:"unlock",
+                    password:null,
+                    timePerRound:0,
+                    curGame: {
+                        date: null,
+                        player1: {
+                            id: null,
+                            name: null
+                        },
+                        player2: {
+                            id: null,
+                            name: null
+                        },
+                        winner: 0,
+                        move: [],
+                        chat: []
+                    },
+                    chat: []
+                }
+                playRooms.push(newRoom);
+                io.sockets.emit('updateRoomsList', playRooms);
+                const random = Math.floor(Math.random() * (quickGamePlayers.length-1));
+                io.sockets.to("QuickGame").emit('findedQuickGame', {"idPlayer1":data.id,"idPlayer2":quickGamePlayers[random],"idRoom":newRoom.roomId}); //gửi cho người chơi: id người chơi 1, id người chơi 2, id phòng
+            }
+        }
+    });
+
+    socket.on('outQuickGame', data => { //data: id: id người chơi muốn chơi nhanh
+        let outQuickGameUserID;
+        for (let a=0; a < quickGamePlayers.length; a++) {
+            if (quickGamePlayers[a] === data.id) {
+                outQuickGameUserID = a;
+                quickGamePlayers.splice(outQuickGameUserID, 1);
+            }
+        }
+    });
+
 
     socket.on('nextMove', move => {
         console.log("From next move", move.i, move.j);
