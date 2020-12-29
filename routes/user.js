@@ -16,4 +16,7 @@ router.post('/confirmToken', passport.authenticate('jwt-forget-password', { sess
 router.post('/resetPassword', validateBody(schemas.resetPasswordSchema), passport.authenticate('jwt-forget-password', { session: false }), UserController.resetPassword);
 router.patch('/profile', passport.authenticate('jwt', { session: false }), UserController.profile);
 
+router.get('/topPlayers',  passport.authenticate('jwt', { session: false }), UserController.getTopPlayers);
+router.get('/:id', passport.authenticate('jwt', { session: false }), UserController.getUserById);
+
 module.exports = router;

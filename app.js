@@ -9,6 +9,9 @@ var _findIndex = require('lodash/findIndex')
 const socketIo = require('socket.io');
 const { forInRight } = require('lodash');
 const { moveCursor } = require('readline');
+const Game = require('./models/game');
+const User = require('./models/user');
+const { CalculateElo, geRank, calculateElo, getRank } = require('./utils/game');
 
 const app = express();
 
@@ -94,8 +97,23 @@ io.on('connection', function(socket) {
                 name: null
             },
             type:data.newRoomType,
-            password:data.newRoomPassword,
-            timePerRound:data.newRoomTimePerRound
+            password: data.newRoomPassword,
+            timePerRound:data.newRoomTimePerRound,
+            curGame: {
+                date: null,
+                player1: {
+                    id: null,
+                    name: null
+                },
+                player2: {
+                    id: null,
+                    name: null
+                },
+                winner: 0,
+                move: [],
+                chat: []
+            },
+            chat: []
         }
         playRooms.push(newRoom);
         io.sockets.emit('updateRoomsList', playRooms);
@@ -175,7 +193,22 @@ io.on('connection', function(socket) {
                     },
                     type:"unlock",
                     password:null,
-                    timePerRound:0
+                    timePerRound:0,
+                    curGame: {
+                        date: null,
+                        player1: {
+                            id: null,
+                            name: null
+                        },
+                        player2: {
+                            id: null,
+                            name: null
+                        },
+                        winner: 0,
+                        move: [],
+                        chat: []
+                    },
+                    chat: []
                 }
                 playRooms.push(newRoom);
                 io.sockets.emit('updateRoomsList', playRooms);
@@ -206,9 +239,20 @@ io.on('connection', function(socket) {
                 playRooms.splice(a, 1);
                 playRooms.splice(a, 0, {
                     ...move.room,
-                    nextTurn: nextTurn
+                    nextTurn: nextTurn,
+                    curGame: {
+                        ...move.room.curGame,
+                        move: move.room.curGame.move.concat([{
+                            playerId: nextTurn === 1 ? move.room.player2.id : move.room.player1.id,
+                            date: Date.now(),
+                            position: {
+                                x: move.i,
+                                y: move.j
+                            }
+                        }])
+                    }
                 });
-                io.sockets.to(move.room.roomId).emit('roomUpdated', playRooms[a]);//gui thong tin room vừa join
+                io.sockets.to(move.room.roomId).emit('roomUpdated', playRooms[a]);
                 break;
             }
         }
@@ -220,14 +264,13 @@ io.on('connection', function(socket) {
         io.sockets.emit('updateRoomsList', playRooms);
     });
 
-
-
-    socket.on('restartGame', room => {
+    socket.on('startGame', room => {
+        console.log("From game start", room);
         for (var a=0; a < playRooms.length; a++) {
             if (playRooms[a].roomId == room.roomId) {
                 playRooms.splice(a, 1);
                 playRooms.splice(a, 0, room);
-                io.sockets.to(room.roomId).emit('roomUpdated', room);//gui thong tin room vừa join
+                io.sockets.to(room.roomId).emit('roomUpdated', room);
                 break;
             }
         }
@@ -249,6 +292,118 @@ io.on('connection', function(socket) {
         });
         io.sockets.emit('updateRoomsList', playRooms);
     });
+
+    socket.on('gameResult', async (result) => {
+        for (var a=0; a < playRooms.length; a++) {
+            if (playRooms[a].roomId == result.room.roomId) {
+                console.log("From game result", playRooms[a].status);
+                if(playRooms[a].status === 0) return;
+                playRooms.splice(a, 1);
+                playRooms.splice(a, 0, result.room);
+                io.sockets.to(result.room.roomId).emit('roomUpdated', result.room);
+                break;
+            }
+        }
+
+        const game = new Game({
+            player1: {
+                id: result.room.player1.id,
+                name: result.room.player1.name
+            },
+            player2: {
+                id: result.room.player2.id,
+                name: result.room.player2.name
+            },
+            winner: result.winner,
+            move: result.room.curGame.move,
+            chat: result.room.curGame.chat
+        });
+        await game.save();
+
+        const player1 = await User.findById(result.room.player1.id);
+        const player2 = await User.findById(result.room.player2.id);
+        let resultElo;
+
+        if(result.winner === 1) 
+        {
+            resultElo = calculateElo(player1.elo, player2.elo, result.resultType);
+            await User.findByIdAndUpdate(result.room.player1.id, {
+                rank: getRank(resultElo.winnerElo),
+                elo: resultElo.winnerElo,
+                game: {
+                    win: player1.game.win + 1,
+                    lose: player1.game.lose,
+                    draw: player1.game.draw,
+                    total: player1.game.total + 1
+                },
+                history: player1.history.concat([game])
+            });
+            await User.findByIdAndUpdate(result.room.player2.id, {
+                rank: getRank(resultElo.loserElo),
+                elo: resultElo.loserElo,
+                game: {
+                    win: player2.game.win,
+                    lose: player2.game.lose + 1,
+                    draw: player2.game.draw,
+                    total: player2.game.total + 1
+                },
+                history: player1.history.concat([game])
+            });
+            io.sockets.to(result.room.roomId).emit('gameResult', {
+                winner: {
+                    id: player1._id,
+                    first_elo: player1.elo,
+                    final_elo: resultElo.winnerElo
+                },
+                loser: {
+                    id: player2._id,
+                    first_elo: player2.elo,
+                    final_elo: resultElo.loserElo
+                },
+                resultType: result.resultType
+            });
+        }
+        else 
+        {
+            resultElo = calculateElo(player2.elo, player1.elo, result.resultType);
+            await User.findByIdAndUpdate(result.room.player1.id, {
+                rank: getRank(resultElo.loserElo),
+                elo: resultElo.loserElo,
+                game: {
+                    win: player1.game.win,
+                    lose: player1.game.lose + 1,
+                    draw: player1.game.draw,
+                    total: player1.game.total + 1
+                },
+                history: player1.history.concat([game])
+            });
+            await User.findByIdAndUpdate(result.room.player2.id, {
+                rank: getRank(resultElo.winnerElo),
+                elo: resultElo.winnerElo,
+                game: {
+                    win: player2.game.win + 1,
+                    lose: player2.game.lose,
+                    draw: player2.game.draw,
+                    total: player2.game.total + 1
+                },
+                history: player1.history.concat([game])
+            });
+            io.sockets.to(result.room.roomId).emit('gameResult', {
+                winner: {
+                    id: player2._id,
+                    first_elo: player2.elo,
+                    final_elo: resultElo.winnerElo
+                },
+                loser: {
+                    id: player1._id,
+                    first_elo: player1.elo,
+                    final_elo: resultElo.loserElo
+                },
+                resultType: result.resultType
+            });
+        }
+    });
+
     //lắng nghe khi có người gửi tin nhắn tất cả mọi ng
     socket.on('newMessage', data => {
         //gửi lại tin nhắn cho tất cả các user dang online
@@ -256,15 +411,46 @@ io.on('connection', function(socket) {
             name: data.name,
             message: data.message
         });
-    })
+    });
+
     //lắng nghe khi có người gửi tin nhắn trong 1 room
     socket.on('chat-room', data => {
+        for (var a=0; a < playRooms.length; a++) {
+            if (playRooms[a].roomId == data.room.roomId) {
+                playRooms.splice(a, 1);
+                playRooms.splice(a, 0, {
+                    ...data.room,
+                    curGame: {
+                        ...data.room.curGame,
+                        chat: data.room.curGame.chat.concat([{
+                            userId: data.user._id,
+                            name: data.user.name,
+                            avatar: data.user.avatar,
+                            date: Date.now(),
+                            message: data.message
+                        }])
+                    },
+                    chat: data.room.chat.concat([{
+                        userId: data.user._id,
+                        name: data.user.name,
+                        avatar: data.user.avatar,
+                        date: Date.now(),
+                        message: data.message
+                    }])
+                });
+                io.sockets.to(data.room.roomId).emit('roomUpdated', playRooms[a]);//gui thong tin room vừa join
+                console.log("From chat-room", playRooms[a]);
+                break;
+            }
+        }
         //gửi lại tin nhắn cho tất cả các user trong room
-        io.sockets.in(data.roomId).emit("server-chat-room", {
-            name: data.name,
+        io.sockets.in(data.room.roomId).emit("server-chat-room", {
+            name: data.user.name,
             message: data.message
         });
-    })
+    });
+
+
 });
 
 // Connect mongoDB
