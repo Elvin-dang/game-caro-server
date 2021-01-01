@@ -22,7 +22,10 @@ passport.use('local', new LocalStrategy({
     usernameField: 'email'
 }, async (email, password, done) => {
     try {
-        const user = await User.findOne({ email });
+        const user = await User.findOne({
+            email: email,
+            accessType: 'email'
+        });
         if(!user) return done(null, true, { message: "User not found"});
         if(user.active !== '2') return done(null, true, { message: "Account has not been active !! Check your email"});
         
