@@ -34,7 +34,6 @@ const io = require('socket.io')(server,{
 let userOnline = []; //danh sách user dang online: userOnline[x][y] => x là thứ tự người onl, y = 0 là socket id, y = 1 là id user, y = 2 là tên user
 let playRooms = []; //danh sách bàn 
 let quickGamePlayers = [] //danh sách người chơi đang chơi nhanh
-
 io.on('connection', function(socket) {
     //lắng nghe khi người dùng thoát
     // console.log('new user', socket.id);
@@ -55,6 +54,7 @@ io.on('connection', function(socket) {
             socketId: socket.id,
             userId: userData.id,
             userName: userData.name,
+            canInvite:true
         };
 
         if(userLogin.userId !== '' && userLogin.userName !== '' )
@@ -119,15 +119,23 @@ io.on('connection', function(socket) {
         io.sockets.emit('updateRoomsList', playRooms);
     });
 
-    socket.on('joinRoom', roomId => {
-        console.log(`${socket.id} join room`, roomId);
+    socket.on('joinRoom', data => { //data:roomId,playerId
+        console.log(`${socket.id} join room`, data.roomId);
         for (var a=0; a < playRooms.length; a++) {
-            if (playRooms[a].roomId == roomId) {
-                socket.join(roomId); //join room theo room id
-                io.sockets.to(roomId).emit('roomJoined', playRooms[a]);//gui thong tin room vừa join                
+            if (playRooms[a].roomId == data.roomId) {
+                socket.join(data.roomId); //join room theo room id
+                io.sockets.to(data.roomId).emit('roomJoined', playRooms[a]);//gui thong tin room vừa join                
                 break;
             }
         }
+
+        for (let a=0; a < userOnline.length; a++) {
+            if (userOnline[a].userId === data.playerId) {
+                userOnline[a].canInvite = false;
+                io.sockets.emit('updateUsersOnlineList', userOnline);//update danh sách người chơi có thể mời
+            }
+        }
+
         io.sockets.emit('updateRoomsList', playRooms);
     });
 
@@ -155,6 +163,12 @@ io.on('connection', function(socket) {
                 playRooms[a].player2.id = null;
                 playRooms[a].player2.name = null;
                 io.sockets.to(playRooms[a].roomId).emit('roomUpdated', playRooms[a]);
+            }
+        }
+        for (let a=0; a < userOnline.length; a++) {
+            if (userOnline[a].userId === userId) {
+                userOnline[a].canInvite = true;
+                io.sockets.emit('updateUsersOnlineList', userOnline);//update danh sách người chơi có thể mời
             }
         }
         io.sockets.emit('updateRoomsList', playRooms);
@@ -193,7 +207,7 @@ io.on('connection', function(socket) {
                     },
                     type:"unlock",
                     password:null,
-                    timePerRound:0,
+                    timePerRound:'100',
                     curGame: {
                         date: null,
                         player1: {
@@ -214,6 +228,12 @@ io.on('connection', function(socket) {
                 io.sockets.emit('updateRoomsList', playRooms);
                 const random = Math.floor(Math.random() * (quickGamePlayers.length-1));
                 io.sockets.to("QuickGame").emit('findedQuickGame', {"idPlayer1":data.id,"idPlayer2":quickGamePlayers[random],"idRoom":newRoom.roomId}); //gửi cho người chơi: id người chơi 1, id người chơi 2, id phòng
+                for (let a=0; a < userOnline.length; a++) {
+                    if (userOnline[a].userId === data.id) {
+                        userOnline[a].canInvite = true;
+                        io.sockets.emit('updateUsersOnlineList', userOnline);//update danh sách người chơi có thể mời
+                    }
+                }
             }
         }
     });
