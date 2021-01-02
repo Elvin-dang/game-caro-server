@@ -250,6 +250,7 @@ io.on('connection', function(socket) {
 
     socket.on('nextMove', move => {
         console.log("From next move", move.i, move.j);
+        console.log("From next move", move.gameConfig);
         for (var a=0; a < playRooms.length; a++) {
             if (playRooms[a].roomId == move.room.roomId) {
                 let nextTurn = 1;
@@ -261,14 +262,15 @@ io.on('connection', function(socket) {
                     nextTurn: nextTurn,
                     curGame: {
                         ...move.room.curGame,
-                        move: move.room.curGame.move.concat([{
-                            playerId: nextTurn === 1 ? move.room.player2.id : move.room.player1.id,
-                            date: Date.now(),
-                            position: {
-                                x: move.i,
-                                y: move.j
-                            }
-                        }])
+                        // move: move.room.curGame.move.concat([{
+                        //     playerId: nextTurn === 1 ? move.room.player2.id : move.room.player1.id,
+                        //     date: Date.now(),
+                        //     position: {
+                        //         x: move.i,
+                        //         y: move.j
+                        //     }
+                        // }])
+                        move: move.gameConfig
                     }
                 });
                 io.sockets.to(move.room.roomId).emit('roomUpdated', playRooms[a]);
@@ -313,6 +315,7 @@ io.on('connection', function(socket) {
 
     socket.on('gameResult', async (result) => {
         console.log(result.winner);
+        console.log(result.room.curGame.move);
         for (var a=0; a < playRooms.length; a++) {
             if (playRooms[a].roomId == result.room.roomId) {
                 if(playRooms[a].status === 0) return;
