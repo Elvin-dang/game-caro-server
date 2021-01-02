@@ -145,10 +145,23 @@ module.exports = {
         }
     },
     profile: async (req, res) => {
-        const user = req.body;
+        console.log(req.body);
+        let data;
+
+        if(req.body.password) {
+            const sail = await bcrypt.genSalt(10);
+            const passwordHash = await bcrypt.hash(req.body.password, sail);
+            data = {
+                email: req.body.email,
+                password: passwordHash
+            }
+        } else {
+            data = req.body;
+        }
+
         try{
             const existUser = await User.findOneAndUpdate(
-               { "email" : req.body.email }, req.body);
+               { "email" : req.body.email, accessType: 'email' }, data);
             res.status(200).json({ msg:"Update successfully!" });
         }
         catch(e){
