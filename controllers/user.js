@@ -145,10 +145,20 @@ module.exports = {
         }
     },
     profile: async (req, res) => {
-        const user = req.body;
-        try{
+        try {
+            let data;
+            if(req.body.password) {
+                const sail = await bcrypt.genSalt(10);
+                const passwordHash = await bcrypt.hash(req.body.password, sail);
+                data = {
+                    email: req.body.email,
+                    password: passwordHash
+                }
+            } else { 
+                data = req.body;
+            }
             const existUser = await User.findOneAndUpdate(
-               { "email" : req.body.email }, req.body);
+               { "email" : req.body.email, "accessType": req.body.accessType }, data);
             res.status(200).json({ msg:"Update successfully!" });
         }
         catch(e){
@@ -175,10 +185,9 @@ module.exports = {
     },
     getTopPlayers: async (req, res) => {
         try{
-            const existUser = await User.find({}, ['_id','name','avatar'], // Columns to Return
+            const existUser = await User.find({}, ['_id','name','avatar','rank','elo','game'], // Columns to Return
             {
                 skip:0, // Starting Row
-                limit:10, // Ending Row
                 sort:{
                     elo: -1 //Sort by elo
                 }
