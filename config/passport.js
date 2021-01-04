@@ -26,11 +26,12 @@ passport.use('local', new LocalStrategy({
             email: email,
             accessType: 'email'
         });
-        if(!user) return done(null, true, { message: "User not found"});
-        if(user.active !== '2') return done(null, true, { message: "Account has not been active !! Check your email"});
+        if(!user) return done(null, true, { message: "Tài khoản hoặc mật khẩu sai"});
+        if(user.active === '3') return done(null, true, { message: "Tài khoản bạn đã bị khóa"});
+        if(user.active === '1') return done(null, true, { message: "Tài khoản chưa được kích hoạt !! Kiểm tra email của bạn để kích hoạt tài khoản"});
         
         const checkPassword = await user.isValidPassword(password);
-        if(!checkPassword) return done(null, true, { message: "Wrong password"});
+        if(!checkPassword) return done(null, true, { message: "Tài khoản hoặc mật khẩu sai"});
 
         done(null, user);
     } catch(err) {
