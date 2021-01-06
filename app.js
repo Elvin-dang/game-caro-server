@@ -124,7 +124,10 @@ io.on('connection', function(socket) {
             if (playRooms[a].roomId == data.roomId) {
                 socket.join(data.roomId); //join room theo room id
                 io.sockets.to(data.roomId).emit('roomJoined', playRooms[a]);//gui thong tin room vừa join  
-                io.sockets.to(data.roomId).emit('setTimer', { duration: playRooms[a].timePerRound });           
+                io.sockets.to(data.roomId).emit('setTimer', { duration: playRooms[a].timePerRound });     
+                if(playRooms[a].curGame.move.length !== 0) {
+                    io.to(socket.id).emit('updateGameConfig', playRooms[a].curGame.move);     
+                }
                 break;
             }
         }
@@ -250,7 +253,6 @@ io.on('connection', function(socket) {
 
     socket.on('nextMove', move => {
         console.log("From next move", move.i, move.j);
-        console.log("From next move", move.gameConfig);
         for (var a=0; a < playRooms.length; a++) {
             if (playRooms[a].roomId == move.room.roomId) {
                 let nextTurn = 1;
@@ -315,7 +317,6 @@ io.on('connection', function(socket) {
 
     socket.on('gameResult', async (result) => {
         console.log(result.winner);
-        console.log(result.room.curGame.move);
         for (var a=0; a < playRooms.length; a++) {
             if (playRooms[a].roomId == result.room.roomId) {
                 if(playRooms[a].status === 0) return;
@@ -516,11 +517,11 @@ io.on('connection', function(socket) {
             }
         }
         //gửi lại tin nhắn cho tất cả các user trong room
-        io.sockets.in(data.room.roomId).emit("server-chat-room", {
-            avatar: data.user.avatar,
-            name: data.user.name,
-            message: data.message
-        });
+        // io.sockets.in(data.room.roomId).emit("server-chat-room", {
+        //     avatar: data.user.avatar,
+        //     name: data.user.name,
+        //     message: data.message
+        // });
     });
 
 

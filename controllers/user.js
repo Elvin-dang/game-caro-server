@@ -33,7 +33,7 @@ module.exports = {
             const { name, email, password } = req.body;
             const existUser = await User.findOne({ email: email, accessType: 'email' });
             if(existUser) return res.status(403).json({
-                message: 'Email has already existed'
+                message: 'Email đã tồn tại'
             });
 
             const newUser = new User({
@@ -58,10 +58,12 @@ module.exports = {
             };
 
             mg.messages().send(data, function (error, body) {
-                console.log(body);
+                if(error) return res.status(403).json({
+                    message: 'Can not send email'
+                });
             });
 
-            res.status(200).json({ message: "Sign up successfully !! Check email for account activation" });
+            res.status(200).json({ message: "Đăng ký thành công!! Kiểm tra email của bạn để kích hoạt tài khoản" });
 
         } catch(err) {
             res.status(404).json({ err });
@@ -94,7 +96,7 @@ module.exports = {
             const { email } = req.body;
             const existUser = await User.findOne({ email: email, accessType: 'email' });
             if(!existUser) return res.status(403).json({
-                message: 'Email not found'
+                message: 'Không tìm thấy email'
             });
 
             const token = signResetPasswordToken(existUser);
@@ -112,7 +114,6 @@ module.exports = {
             };
 
             mg.messages().send(data, function (error, body) {
-                console.log(body);
                 if(error) return res.status(403).json({
                     message: 'Can not send email'
                 });
