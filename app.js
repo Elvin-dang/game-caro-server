@@ -463,6 +463,71 @@ io.on('connection', function(socket) {
                 resultType: result.resultType
             });
         }
+
+        // Check if player is disconnected
+        let isPlayer1Disconnect = true;
+        let isPlayer2Disconnect = true;
+
+        for(let i = 0; i<userOnline.length; i++) {
+            if(userOnline[i].userId === result.room.player1.id) {
+                isPlayer1Disconnect = false;
+                break;
+            }
+        }
+
+        for(let i = 0; i<userOnline.length; i++) {
+            if(userOnline[i].userId === result.room.player2.id) {
+                isPlayer2Disconnect = false;
+                break;
+            }
+        }
+
+
+        if(isPlayer1Disconnect) {
+            for (var a=0; a < playRooms.length; a++) {
+                if (playRooms[a].roomId == result.room.roomId) {
+                    playRooms.splice(a, 1);
+                    playRooms.splice(a, 0, {
+                        ...result.room,
+                        player1: {
+                            id: null,
+                            name: null
+                        }
+                    });
+                    io.sockets.to(result.room.roomId).emit('roomUpdated', {
+                        ...result.room,
+                        player1: {
+                            id: null,
+                            name: null
+                        }
+                    });
+                    break;
+                }
+            }
+        };
+
+        if(isPlayer2Disconnect) {
+            for (var a=0; a < playRooms.length; a++) {
+                if (playRooms[a].roomId == result.room.roomId) {
+                    playRooms.splice(a, 1);
+                    playRooms.splice(a, 0, {
+                        ...result.room,
+                        player2: {
+                            id: null,
+                            name: null
+                        }
+                    });
+                    io.sockets.to(result.room.roomId).emit('roomUpdated', {
+                        ...result.room,
+                        player2: {
+                            id: null,
+                            name: null
+                        }
+                    });
+                    break;
+                }
+            }
+        };
     });
 
     socket.on("drawRequest", request => {
