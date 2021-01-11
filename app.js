@@ -180,7 +180,7 @@ io.on('connection', function(socket) {
         io.sockets.emit('inviteToPlay', data);
     });
 
-    socket.on('joinQuickGame', data => { //data: id: id người chơi muốn chơi nhanh
+    socket.on('joinQuickGame', data => { //data: id: id người chơi muốn chơi nhanh,elo: là elo của người chơi
         let checkJoined = false;
         for (var a=0; a < quickGamePlayers.length; a++) {
             if(quickGamePlayers[a] === data.id)
@@ -190,7 +190,7 @@ io.on('connection', function(socket) {
         }
         if(checkJoined === false)
         {
-            quickGamePlayers.push(data.id);
+            quickGamePlayers.push({"id":data.id,"elo":data.elo});
             socket.join("QuickGame");
             if(quickGamePlayers.length >= 2)
             {
@@ -228,13 +228,28 @@ io.on('connection', function(socket) {
                 }
                 playRooms.push(newRoom);
                 io.sockets.emit('updateRoomsList', playRooms);
-                const random = Math.floor(Math.random() * (quickGamePlayers.length-1));
-                io.sockets.to("QuickGame").emit('findedQuickGame', {"idPlayer1":data.id,"idPlayer2":quickGamePlayers[random],"idRoom":newRoom.roomId}); //gửi cho người chơi: id người chơi 1, id người chơi 2, id phòng
+                let indexPlayerB = 0;
+                let temp;
+                let dist = Math.abs(quickGamePlayers[0] - data.elo);
+                for (let a=1;a<quickGamePlayers.length;a++)
+                {
+                    temp = Math.abs(quickGamePlayers[a] - data.elo); 
+                    if(dist > temp)
+                    {
+                        dist = temp;
+                        indexPlayerB = i;
+                    }
+                }
+                io.sockets.to("QuickGame").emit('findedQuickGame', {"idPlayer1":data.id,"idPlayer2":quickGamePlayers[indexPlayerB].id,"idRoom":newRoom.roomId}); //gửi cho người chơi: id người chơi 1, id người chơi 2, id phòng
                 for (let a=0; a < userOnline.length; a++) {
                     if (userOnline[a].userId === data.id) {
                         userOnline[a].canInvite = true;
                         io.sockets.emit('updateUsersOnlineList', userOnline);//update danh sách người chơi có thể mời
-                    }
+                    } 
+                    else if(userOnline[a].userId === quickGamePlayers[indexPlayerB].id) {
+                        userOnline[a].canInvite = true;
+                        io.sockets.emit('updateUsersOnlineList', userOnline);//update danh sách người chơi có thể mời
+                    } 
                 }
             }
         }
