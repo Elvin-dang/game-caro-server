@@ -27,7 +27,7 @@ passport.use('local', new LocalStrategy({
             accessType: 'email'
         });
         if(!user) return done(null, true, { message: "Tài khoản hoặc mật khẩu sai"});
-        if(user.active === '3') return done(null, true, { message: "Tài khoản bạn đã bị khóa"});
+        if(user.active === '3' || user.active === '4') return done(null, true, { message: "Tài khoản bạn đã bị khóa"});
         if(user.active === '1') return done(null, true, { message: "Tài khoản chưa được kích hoạt !! Kiểm tra email của bạn để kích hoạt tài khoản"});
         
         const checkPassword = await user.isValidPassword(password);
