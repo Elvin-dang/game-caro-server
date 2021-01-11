@@ -24,13 +24,16 @@ module.exports = {
             const { email_verified, email, name } = response.payload;
     
             if(!email_verified) return res.status(401).json({
-                message: "Email is not verified"
+                message: "Tài khoản chưa được xác thực từ google"
             });
     
             const user = await User.findOne({email: email, accessType: "google"});
             if(user) {
-                const token = signToken(user);
-                res.status(200).json({ token });
+                if(user.active === '3') res.status(401).json({ message: "Tài khoản bạn đã bị khóa"});
+                else {
+                    const token = signToken(user);
+                    res.status(200).json({ token });
+                }
             } else {
                 const newUser = new User({
                     name: name,
@@ -45,7 +48,7 @@ module.exports = {
                 res.status(200).json({ token });
             }
         } catch(err) {
-            res.status(400).json(err);
+            res.status(404).json(err);
         }
     },
     facebook: async (req, res) => {
@@ -58,8 +61,11 @@ module.exports = {
             const { email, name } = jsonResponse;
             const user = await User.findOne({email: email, accessType: "facebook"});
             if(user) {
-                const token = signToken(user);
-                res.status(200).json({ token });
+                if(user.active === '3') res.status(401).json({ message: "Tài khoản bạn đã bị khóa"});
+                else {
+                    const token = signToken(user);
+                    res.status(200).json({ token });
+                }
             } else {
                 const newUser = new User({
                     name: name,
@@ -74,8 +80,7 @@ module.exports = {
                 res.status(200).json({ token });
             }
         } catch(err) {
-            console.log(err);
-            res.status(400).json(err);
+            res.status(404).json(err);
         }
     }
 }
