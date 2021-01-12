@@ -258,7 +258,7 @@ io.on('connection', function(socket) {
     socket.on('outQuickGame', data => { //data: id: id người chơi muốn chơi nhanh
         let outQuickGameUserID;
         for (let a=0; a < quickGamePlayers.length; a++) {
-            if (quickGamePlayers[a] === data.id) {
+            if (quickGamePlayers[a].id === data.id) {
                 outQuickGameUserID = a;
                 quickGamePlayers.splice(outQuickGameUserID, 1);
             }
@@ -267,7 +267,6 @@ io.on('connection', function(socket) {
 
 
     socket.on('nextMove', move => {
-        console.log("From next move", move.i, move.j);
         for (var a=0; a < playRooms.length; a++) {
             if (playRooms[a].roomId == move.room.roomId) {
                 let nextTurn = 1;
@@ -331,7 +330,6 @@ io.on('connection', function(socket) {
     });
 
     socket.on('gameResult', async (result) => {
-        console.log(result.winner);
         for (var a=0; a < playRooms.length; a++) {
             if (playRooms[a].roomId == result.room.roomId) {
                 if(playRooms[a].status === 0) return;
@@ -546,7 +544,6 @@ io.on('connection', function(socket) {
     });
 
     socket.on("drawRequest", request => {
-        console.log(request);
         io.sockets.to(request.roomId).emit('getDrawRequest', {
             from: request.from
         });
