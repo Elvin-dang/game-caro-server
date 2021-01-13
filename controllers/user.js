@@ -55,9 +55,16 @@ module.exports = {
                     <p>Nhấn vào link bên dưới xác nhận tài khoản của bạn:</p>
                     <p>${process.env.CLIENT_DOMAIN}/account/activate/${token}</p>
                 `
+                // html: `
+                //     <h2>Xin chào ${name},</h2>
+                //     <p></p>
+                //     <p>Nhấn vào link bên dưới xác nhận tài khoản của bạn:</p>
+                //     <p>${process.env.CLIENT_TEST_DOMAIN}/account/activate/${token}</p>
+                // `
             };
 
             mg.messages().send(data, function (error, body) {
+                console.log('send mail confirm');
                 if(error) return res.status(403).json({
                     message: 'Can not send email'
                 });
@@ -81,6 +88,7 @@ module.exports = {
     },
     activeAccount: async (req, res) => {
         try {
+            if (req.user.active === '3' || req.user.active === '4' ) res.status(404).json({ result: false });
             const user = await User.findByIdAndUpdate(req.user._id, {
                 active: '2'
             }, { new: true });
@@ -88,7 +96,6 @@ module.exports = {
             res.status(200).json({ result: true });
         } catch(err) {
             res.status(404).json({ result: false });
-            console.log(err);
         }
     },
     forgetPassword: async (req, res) => {
